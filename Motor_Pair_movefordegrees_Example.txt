@@ -1,0 +1,13 @@
+from hub import port
+import motor_pair, runloop
+
+motor_pair.pair(motor_pair.PAIR_1, port.A, port.B)
+
+async def main():
+    # Drive forward 3 motor rotations (360 * 3 = 1080 degrees)
+    await motor_pair.move_for_degrees(motor_pair.PAIR_1, 1080, 0)
+
+    # Drive backward 3 motor rotations
+    await motor_pair.move_for_degrees(motor_pair.PAIR_1, -1080, 0)
+
+runloop.run(main())

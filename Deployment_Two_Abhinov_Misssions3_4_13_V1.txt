@@ -1,0 +1,117 @@
+from hub import port, motion_sensor
+import runloop, motor_pair, motor, math, sys
+
+#define values
+wheel_dia_cm = 6.24
+degrees_per_rot = 360
+
+#calc_wheel_circum
+wheel_circum = wheel_dia_cm * math.pi
+degrees_per_cm = degrees_per_rot / wheel_circum
+
+#define motor_pair
+motor_pair.pair(motor_pair.PAIR_1,port.A,port.B)
+drive_pair = motor_pair.PAIR_1
+
+async def main():
+
+    # Remove Backlash by moving backwards
+    await motor_pair.move_for_degrees(drive_pair,20,0,velocity=200)
+
+    # Drive toward to mission 3
+    await motor_pair.move_for_degrees(drive_pair,int(71*degrees_per_cm),0, velocity= -585)
+
+    # Turn left toward mission 13
+    motion_sensor.reset_yaw(0)
+    await runloop.sleep_ms(10)
+    motor_pair.move(drive_pair,-100,velocity=180)
+    while motion_sensor.tilt_angles()[0]<=550:
+        await runloop.sleep_ms(10)
+
+    motor_pair.stop(drive_pair)
+    await runloop.sleep_ms(10)
+
+    print("First left angle:", motion_sensor.tilt_angles()[0])
+
+    # Lower Large fork
+    await motor.run_for_time(port.F,800,-400)
+
+    # Drive into mission 13
+    await motor_pair.move_for_degrees(drive_pair,int(20*degrees_per_cm),0, velocity= 600)
+
+    # Lift large fork
+    motor.run_for_time(port.F,800,400)
+    await runloop.sleep_ms(10)
+
+    # Turn to lift statue at mission 13
+    motion_sensor.reset_yaw(0)
+    await runloop.sleep_ms(10)
+    motor_pair.move(drive_pair,-100,velocity=300)
+    while motion_sensor.tilt_angles()[0]<=300:
+        await runloop.sleep_ms(10)
+
+    motor_pair.stop(drive_pair)
+    await runloop.sleep_ms(10)
+
+    print("Second left angle:", motion_sensor.tilt_angles()[0])
+
+    # Back away from 13 the statue
+    await motor_pair.move_for_degrees(drive_pair,int(15*degrees_per_cm),0, velocity= -600)
+
+    # Turn back into wall
+    motion_sensor.reset_yaw(0)
+    await runloop.sleep_ms(10)
+    motor_pair.move(drive_pair,100,velocity=100)
+    while motion_sensor.tilt_angles()[0]>=-310:
+        await runloop.sleep_ms(10)
+
+    motor_pair.stop(drive_pair)
+    await runloop.sleep_ms(10)
+
+    print("First right angle:", motion_sensor.tilt_angles()[0])
+
+    # Back away from 13
+    await motor_pair.move_for_degrees(drive_pair,int(32*degrees_per_cm),0, velocity=-600)
+
+    # Reverse right angle to back beetween 2 & 4
+    motion_sensor.reset_yaw(0)
+    await runloop.sleep_ms(10)
+    motor_pair.move(drive_pair,-100,velocity=100)
+    while motion_sensor.tilt_angles()[0]<=285:
+        await runloop.sleep_ms(10)
+
+    motor_pair.stop(drive_pair)
+    await runloop.sleep_ms(10)
+
+    print("Third left angle:", motion_sensor.tilt_angles()[0])
+
+    # lower E into position
+    motor.run_for_time(port.E,800,-200)
+    await runloop.sleep_ms(50)
+    '''
+    # Turn into mission 4
+    motion_sensor.reset_yaw(0)
+    await runloop.sleep_ms(10)
+    motor_pair.move(drive_pair,-100,velocity=300)
+    while motion_sensor.tilt_angles()[0]>= -200:
+        await runloop.sleep_ms(10)
+
+    # Drive into Artifact
+    await motor_pair.move_for_degrees(drive_pair,int(11*degrees_per_cm),0, velocity= 600)
+
+    # Lift Minecart and Artifact
+    motor.run_for_time(port.F,500,200)
+    motor.run_for_time(port.E,100,200)
+    await runloop.sleep_ms(10)
+
+    # Turn to go home
+    motion_sensor.reset_yaw(0)
+    await runloop.sleep_ms(10)
+    motor_pair.move(drive_pair,100,velocity=300)
+    while motion_sensor.tilt_angles()[0]<= 1100:
+        await runloop.sleep_ms(10)
+
+    #Drive Home
+    await motor_pair.move_for_degrees(drive_pair,int(77*degrees_per_cm),0, velocity= 600)
+    '''
+runloop.run(main())

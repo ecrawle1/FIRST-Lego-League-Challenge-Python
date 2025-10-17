@@ -1,0 +1,58 @@
+from hub import port, motion_sensor
+import runloop,motor_pair, math
+
+#define values
+wheel_dia_cm = 6.24
+degrees_per_rot = 360
+
+#calc_wheel_circum
+wheel_circum = wheel_dia_cm * math.pi
+degrees_per_cm = degrees_per_rot / wheel_circum
+
+#define motor_pair
+motor_pair.pair(motor_pair.PAIR_1,port.A,port.B)
+drive_pair = motor_pair.PAIR_1
+
+async def main():
+#distance to first mission and same distance to go back to home
+    degrees_1 = int(60*degrees_per_cm)
+#distance from first turn to mission and back
+    degrees_2 = int(7*degrees_per_cm)
+
+#remove backlash
+    await motor_pair.move_for_degrees(drive_pair,20,0,velocity= -200)
+    await runloop.sleep_ms(100)
+
+#drive for 60 cm
+    await motor_pair.move_for_degrees(drive_pair,degrees_1,0,velocity= 600)
+    await runloop.sleep_ms(100)
+    motor_pair.stop(drive_pair)
+
+#turn 30 degrees left
+    motion_sensor.reset_yaw(0)
+    motor_pair.move(drive_pair,-100,velocity=200) 
+    while motion_sensor.tilt_angles()[0]<=250:
+        await runloop.sleep_ms(10)
+    motor_pair.stop(drive_pair)
+    await runloop.sleep_ms(500)
+
+#drive forward 7 cm
+    await motor_pair.move_for_degrees(drive_pair,degrees_2,0,velocity= 300)
+    await runloop.sleep_ms(100)
+    #drive back 7 cm
+    await motor_pair.move_for_degrees(drive_pair,degrees_2,0,velocity=-300)
+    await runloop.sleep_ms(100) 
+
+#reverse turn 30 degrees
+    motion_sensor.reset_yaw(0)
+    motor_pair.move(drive_pair,-100,velocity=-200) # going back works you will still be turning wheels left
+    while motion_sensor.tilt_angles()[0]>=-250: # opposite direction is achieved with yaw degrees
+        await runloop.sleep_ms(10)
+    motor_pair.stop(drive_pair)
+    await runloop.sleep_ms(500)
+
+#reverse 60 cm
+    await motor_pair.move_for_degrees(drive_pair,degrees_1,0,velocity= -600)
+    await runloop.sleep_ms(500)
+
+runloop.run(main())

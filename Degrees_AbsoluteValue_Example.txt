@@ -1,0 +1,38 @@
+
+## You already know this part... but we're going to also import motion_sensor from the hub
+from hub import port, motion_sensor
+import runloop, motor_pair, sys
+
+## Here is a quick helper function: define "turn_done" or whatever you want to name it.
+## Use the colon and return the tilt angle. We want the absolute value (the amount -doesn't care if it positive or negative)
+## when yaw reaches about 90 degrees the turn will stop : (tilt_angle() [0] * -0.1 > 90)
+##tilt_angles()[0]
+    ##This reads the tilt angle on the yaw axis from the motion sensor.
+
+    ##tilt_angles() returns a list:
+    ##[yaw, pitch, roll] = [tilt_angles()[0], tilt_angles()[1], tilt_angles()[2]]
+
+    ## multiplying by -0.1 makes sure if it goes to or over 90 it will scale back or correct itself - it's calibrating
+
+def turn_done():
+    return abs(motion_sensor.tilt_angles()[0] * -0.1) > 90
+
+async def main():
+    # Set up the motors
+    motor_pair.pair(motor_pair.PAIR_1, port.A, port.B)
+    motion_sensor.reset_yaw(0)
+
+    # Wait until the sensor is stable (laying flat)
+    await runloop.until(motion_sensor.stable)
+
+    # Begin the turn using a pivot (steering = 50 for right turn)
+    motor_pair.move(motor_pair.PAIR_1, 50, velocity=200)
+
+    # Wait until yaw angle is approximately 90 degrees
+    await runloop.until(turn_done)
+
+    # Stop the motors
+    motor_pair.stop(motor_pair.PAIR_1)
+    sys.exit()
+
+runloop.run(main())

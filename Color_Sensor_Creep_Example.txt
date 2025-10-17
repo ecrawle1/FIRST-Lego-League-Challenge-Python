@@ -1,0 +1,63 @@
+from hub import port, motion_sensor
+import motor
+import runloop, motor_pair, color_sensor
+import math
+
+#Pair motors A & B
+motor_pair.pair(motor_pair.PAIR_1, port.E, port.F)
+
+#Provide the wheel diameter to calculate a true 360 degree rotation as a full wheel revolution
+wheel_diameter_cm = 6.24  # Spike prime wheel 62.4 x 20 Standard
+
+#what is the value for the color sensor when it sees black - this is the threshold value (run a test)
+threshold = 51
+
+#Calculate the degrees per inch based on the wheel diameter
+def degrees_per_inch(diameter_cm):
+    circumference_in_inches = (math.pi * diameter_cm)/2.54
+    return 360 / circumference_in_inches
+
+DEGREES_PER_INCH = degrees_per_inch(wheel_diameter_cm)
+
+# check if sensor sees black
+def sees_black():
+    return color_sensor.reflection(port.D) < threshold
+
+
+async def main():
+    #step 1 drive forward for x inches
+    degrees = int(11 * DEGREES_PER_INCH)
+    await motor_pair.move_for_degrees(motor_pair.PAIR_1, degrees, 0, velocity=500)
+    await runloop.sleep_ms(500)
+
+    #step 2 turn right 90 degrees
+    motion_sensor.reset_yaw(0)
+    motor_pair.move(motor_pair.PAIR_1, 100, velocity=150) #steering is positive for right turn
+    target_yaw = -800
+    while motion_sensor.tilt_angles()[0] > target_yaw:  # 88 degrees in tenths and a negative to turn right because negatives are on the right of the number line
+        await runloop.sleep_ms(10)
+    motor_pair.stop(motor_pair.PAIR_1)
+    await runloop.sleep_ms(500)
+
+    total_deg = int(23 * DEGREES_PER_INCH)
+    fast_deg = int(total_deg * 0.85)
+    slow_deg = total_deg - fast_deg
+ 
+    await motor_pair.move_for_degrees(motor_pair.PAIR_1, fast_deg, 0, velocity=600)
+
+    await motor_pair.move_for_degrees(motor_pair.PAIR_1, slow_deg, 0, velocity=180)
+    await runloop.sleep_ms(500)
+    
+    creep_velocity = 140
+    creep_max_inches = 4
+    creep_limit_deg = int(creep_max_inches * DEGREES_PER_INCH)
+    traveled_est = 0
+
+    motor_pair.move(motor_pair.PAIR_1, 0, velocity=creep_velocity)
+    while not sees_black() and traveled_est < creep_limit_deg:
+        await runloop.sleep_ms(10)
+        traveled_est += int(DEGREES_PER_INCH * 0.02)
+
+    motor_pair.stop(motor_pair.PAIR_1)
+        
+runloop.run(main())

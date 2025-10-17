@@ -1,0 +1,59 @@
+from hub import port
+import runloop,motor_pair, math, motor
+
+#define values
+wheel_dia_cm = 6.24
+degrees_per_rot = 360
+
+#calc_wheel_circum
+wheel_circum = wheel_dia_cm * math.pi
+degrees_per_cm = degrees_per_rot / wheel_circum
+
+#define motor_pair
+motor_pair.pair(motor_pair.PAIR_1,port.A,port.B)
+drive_pair = motor_pair.PAIR_1
+
+async def main():
+#distance to boat
+    degrees_1 = int(47*degrees_per_cm)
+#distance to boat lever
+    degrees_2 = int(14*degrees_per_cm)
+#pull sand distance
+    degrees_3 = int(5*degrees_per_cm)
+#degrees home
+    degrees_4 = int(57*degrees_per_cm)
+    
+#remove backlash
+    await motor_pair.move_for_degrees(drive_pair,20,0,velocity= -200)
+    await runloop.sleep_ms(100)
+
+#drive for 47 cm
+    await motor_pair.move_for_degrees(drive_pair,degrees_1,0,velocity= 600)
+    await runloop.sleep_ms(100)
+    motor_pair.stop(drive_pair)
+
+#lower F for sand
+    await motor.run_for_degrees(port.F, 70, 250)
+
+#drive back 5 cm
+    await motor_pair.move_for_degrees(drive_pair,degrees_3,0,velocity=-500)
+    await runloop.sleep_ms(100)
+
+#raise F from sand
+    await motor.run_for_degrees(port.F, -60, 125,deceleration=600)
+
+#drive forward 9 cm
+    await motor_pair.move_for_degrees(drive_pair,degrees_2,0,velocity= 400)
+    await runloop.sleep_ms(100)
+
+#drop flag and raise
+    await motor.run_for_degrees(port.F, 130, 200)
+    await runloop.sleep_ms(60)
+    await motor.run_for_degrees(port.F, -130, 500)
+
+#drive back home
+    await motor_pair.move_for_degrees(drive_pair,degrees_4,0,velocity=-1000)
+    await runloop.sleep_ms(100)
+
+
+runloop.run(main())
